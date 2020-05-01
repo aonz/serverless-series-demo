@@ -58,8 +58,11 @@ mkdir -p echo
 cd echo
 yarn init
 touch app.js
+cd ..
 
+cd hello-world
 yarn add aws-sdk aws-xray-sdk-core
+cd ..
 
 sam build && sam deploy
 
@@ -77,7 +80,26 @@ git add -A
 git commit -a -m 'Step 3 - Invoking another Lamda function and Tracing with AWS X-Ray.'
 ```
 
-# Pending features (As of 25 April 2020)
+# Step 4 - Using Lambda Layer and Custome Runtime.
 
-- Support for Lambda Custom Runtime, https://github.com/awslabs/aws-sam-cli/pull/1279
-- Support for using `local start-api` with `HttpApi`, https://github.com/awslabs/aws-sam-cli/issues/1641
+```
+mkdir -p lib/nodejs
+touch lib/nodejs/logger.js
+
+sam build && sam deploy
+
+touch lib/bootstrap
+chmod +x lib/bootstrap
+touch lib/runtime.js
+
+sam build && sam deploy
+
+# Change Lambda runtime on AWS console
+
+sam logs -n HelloWorldFunction --stack-name sam-app --tail
+curl ${BASE_URL}/hello
+
+echo "lib/node-v*" >> .gitignore
+git add -A
+git commit -a -m 'Step 4 - Using Lambda Layer and Custome Runtime.'
+```
