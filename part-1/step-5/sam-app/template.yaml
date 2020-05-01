@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: sam-app
+
+Globals:
+  Function:
+    Timeout: 3
+  Api:
+    TracingEnabled: true
+
+Resources:
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: hello-world/
+      Handler: app.lambdaHandler
+      Runtime: nodejs12.x
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+      Environment:
+        Variables:
+          PING_FUNCTION: !Ref EchoFunction
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref EchoFunction
+      Tracing: 'Active'
+      Timeout: 10
+      Layers:
+        - !Ref LibLayer
+  EchoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: echo/
+      Handler: app.lambdaHandler
+      Runtime: nodejs12.x
+      Tracing: 'Active'
+      Timeout: 10
+      Layers:
+        - !Ref LibLayer
+  LibLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: lib/
+  ExpressFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: express/
+      Handler: app.lambdaHandler
+      Runtime: nodejs12.x
+      Events:
+        Express:
+          Type: Api
+          Properties:
+            Path: /express
+            Method: ANY
+        ExpressWildcard:
+          Type: Api
+          Properties:
+            Path: /express/{proxy+}
+            Method: ANY
+
+Outputs:
+  BaseUrl:
+    Description: 'API Gateway endpoint URL'
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod'

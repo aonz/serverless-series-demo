@@ -103,3 +103,30 @@ echo "lib/node-v*" >> .gitignore
 git add -A
 git commit -a -m 'Step 4 - Using Lambda Layer and Custome Runtime.'
 ```
+
+# Step 5 - Using Lambda API Proxy library.
+
+```
+mkdir -p express
+cd express
+yarn init
+yarn add express cors body-parser aws-serverless-express
+cd ..
+
+node express/server.js
+
+curl -X POST -H "Content-Type: application/json" \
+    -d '{"ping": "pong"}' \
+    http://localhost:3000/express/test?log=true
+
+sam build && sam deploy
+
+sam logs -n ExpressFunction --stack-name sam-app --tail
+
+curl -X POST -H "Content-Type: application/json" \
+    -d '{"ping": "pong"}' \
+    "${BASE_URL}/express/test?log=true"
+
+git add -A
+git commit -a -m 'Step 5 - Using Lambda API Proxy library.'
+```

@@ -1,0 +1,5 @@
+.aws-sam/
+samconfig.toml
+node_modules/
+output.txt
+lib/node-v*
