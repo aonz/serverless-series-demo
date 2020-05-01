@@ -130,3 +130,24 @@ curl -X POST -H "Content-Type: application/json" \
 git add -A
 git commit -a -m 'Step 5 - Using Lambda API Proxy library.'
 ```
+
+# Step 6 - Enabling Lambda gradual deployment.
+
+```
+sam build && sam deploy
+
+while sleep 1; do curl ${BASE_URL}/hello; echo; done
+
+git add -A
+git commit -a -m 'Step 6 - Enabling Lambda gradual deployment.'
+```
+
+# Pending features (As of 25 April 2020)
+
+- Support for Lambda Custom Runtime, https://github.com/awslabs/aws-sam-cli/pull/1279
+- Support for using `local start-api` with `HttpApi`, https://github.com/awslabs/aws-sam-cli/issues/1641
+
+# Resources
+
+- [AWS Serverless Express](https://github.com/awslabs/aws-serverless-express)
+- [AWS Lambda Go Api Proxy](https://github.com/awslabs/aws-lambda-go-api-proxy)
