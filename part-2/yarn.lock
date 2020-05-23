@@ -106,7 +106,7 @@
     "@aws-cdk/custom-resources" "1.41.0"
     constructs "^3.0.2"
 
-"@aws-cdk/aws-ec2@1.41.0":
+"@aws-cdk/aws-ec2@1.41.0", "@aws-cdk/aws-ec2@^1.41.0":
   version "1.41.0"
   resolved "https://registry.yarnpkg.com/@aws-cdk/aws-ec2/-/aws-ec2-1.41.0.tgz#e41c09ae5302c20269c622ee5752fa74ae23e5cf"
   integrity sha512-DWxmAlSDjZngYn4XENicvOv24wRBEfCVOwQLeo9gVkhj7r8KhdMB2CNSRN+kAzYVZYpBFcDRE52gsd0CMRy/1g==
@@ -145,7 +145,7 @@
     "@aws-cdk/core" "1.41.0"
     constructs "^3.0.2"
 
-"@aws-cdk/aws-iam@1.41.0":
+"@aws-cdk/aws-iam@1.41.0", "@aws-cdk/aws-iam@^1.41.0":
   version "1.41.0"
   resolved "https://registry.yarnpkg.com/@aws-cdk/aws-iam/-/aws-iam-1.41.0.tgz#b9f8fd0e0791b76a849367045a79974cda1fef2b"
   integrity sha512-1pblFd9JPOqChNyMMlTFf5VdYfXeysuokJhDJE+udZGlxgb8yqQiAmukuB0BdueJsaHVQdyQOz5QenPN5bUvUw==
@@ -292,7 +292,7 @@
     "@aws-cdk/core" "1.41.0"
     constructs "^3.0.2"
 
-"@aws-cdk/aws-secretsmanager@1.41.0":
+"@aws-cdk/aws-secretsmanager@1.41.0", "@aws-cdk/aws-secretsmanager@^1.41.0":
   version "1.41.0"
   resolved "https://registry.yarnpkg.com/@aws-cdk/aws-secretsmanager/-/aws-secretsmanager-1.41.0.tgz#7c1a0723017e51c6922902c2991242f637c3d839"
   integrity sha512-N8avKafLAGGH3LYv0xniexUtcLtPuZ64FxQ2yF/viu2P1J49YyrL1arAi9/6YviOuO2Za60pziny9ISgfEhdfw==
@@ -562,7 +562,7 @@ aws-cdk@1.41.0:
     yaml "^1.10.0"
     yargs "^15.3.1"
 
-aws-sdk@^2.681.0:
+aws-sdk@^2.681.0, aws-sdk@^2.683.0:
   version "2.683.0"
   resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.683.0.tgz#c374374a443790a9520b1b00a3f0d42085c42891"
   integrity sha512-mi1175pJMbQhCWhBEQ5ccQ3SDE+SJzbapuAQtcb7tdLLV7dPKf4zQXhpqK1uG0dysm8NhsNtgxwA2diYOKWlTg==
@@ -757,6 +757,13 @@ crypt@~0.0.1:
   version "0.0.2"
   resolved "https://registry.yarnpkg.com/crypt/-/crypt-0.0.2.tgz#88d7ff7ec0dfb86f713dc87bbb42d044d3e6c41b"
   integrity sha1-iNf/fsDfuG9xPch7u0LQRNPmxBs=
+
+data-api-client@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/data-api-client/-/data-api-client-1.0.1.tgz#816798fb2f25dabf80e54dceb5e0d3ec1ed4dd6c"
+  integrity sha512-5aJ3uu2NH1S2mKyHhAqhkMMt7vgyKlLCdT/aq8X3disylSfGxSDj7NUl4zZzL5Jalbnoz40inZbB2i0EXTJbzg==
+  dependencies:
+    sqlstring "^2.3.1"
 
 data-uri-to-buffer@1:
   version "1.2.0"
@@ -1498,6 +1505,11 @@ source-map@^0.6.0, source-map@~0.6.1:
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/source-map/-/source-map-0.6.1.tgz#74722af32e9614e9c287a8d0bbde48b5e2f1a263"
   integrity sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==
+
+sqlstring@^2.3.1:
+  version "2.3.2"
+  resolved "https://registry.yarnpkg.com/sqlstring/-/sqlstring-2.3.2.tgz#cdae7169389a1375b18e885f2e60b3e460809514"
+  integrity sha512-vF4ZbYdKS8OnoJAWBmMxCQDkiEBkGQYU7UZPtL8flbDRSNkhaXvRJ279ZtI6M+zDaQovVU4tuRgzK5fVhvFAhg==
 
 "statuses@>= 1.5.0 < 2":
   version "1.5.0"
