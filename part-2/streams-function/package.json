@@ -4,6 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "aws-sdk": "^2.683.0"
+    "aws-sdk": "^2.683.0",
+    "data-api-client": "^1.0.1"
   }
 }

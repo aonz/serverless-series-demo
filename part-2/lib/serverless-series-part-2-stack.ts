@@ -55,11 +55,15 @@ export class ServerlessSeriesPart2Stack extends cdk.Stack {
       stream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
+    shopTable.addGlobalSecondaryIndex({
+      indexName: 'GSI1',
+      partitionKey: { name: 'GSI1PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'GSI1SK', type: dynamodb.AttributeType.STRING },
+    });
 
     const itemTable = new dynamodb.Table(this, 'ItemDynamoDbTable', {
       tableName: `${name}Item`,
       partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
@@ -83,8 +87,8 @@ export class ServerlessSeriesPart2Stack extends cdk.Stack {
       vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
       environment: {
-        ShopTable: shopTable.tableName,
-        ItemTable: itemTable.tableName,
+        SHOP_TABLE: shopTable.tableName,
+        ITEM_TABLE: itemTable.tableName,
       },
     });
 
@@ -93,7 +97,10 @@ export class ServerlessSeriesPart2Stack extends cdk.Stack {
     httpApi.addRoutes({
       path: '/{proxy+}',
       methods: [apigatewayv2.HttpMethod.ANY],
-      integration: new apigatewayv2.LambdaProxyIntegration({ handler: shopFn }),
+      integration: new apigatewayv2.LambdaProxyIntegration({
+        handler: shopFn,
+        payloadFormatVersion: apigatewayv2.PayloadFormatVersion.VERSION_1_0,
+      }),
     });
 
     // Aurora Serverless
@@ -140,6 +147,7 @@ export class ServerlessSeriesPart2Stack extends cdk.Stack {
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaVPCAccessExecutionRole'),
         iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonRDSDataFullAccess'),
+        iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonDynamoDBFullAccess'),
       ],
     });
     const streamsFn = new lambda.Function(this, 'StreamsFunction', {

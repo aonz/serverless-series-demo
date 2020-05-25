@@ -1,0 +1,44 @@
+{
+  "Records": [
+    {
+      "eventName": "INSERT",
+      "dynamodb": { "NewImage": { "Status": { "S": "Pending" }, "ItemPK": { "S": "Item-3" } } }
+    },
+    {
+      "eventName": "INSERT",
+      "dynamodb": { "NewImage": { "Status": { "S": "Pending" }, "ItemPK": { "S": "Item-3" } } }
+    },
+    {
+      "eventName": "INSERT",
+      "dynamodb": { "NewImage": { "Status": { "S": "Pending" }, "ItemPK": { "S": "Item-3" } } }
+    },
+    {
+      "eventName": "INSERT",
+      "dynamodb": { "NewImage": { "Status": { "S": "Pending" }, "ItemPK": { "S": "Item-5" } } }
+    },
+    {
+      "eventName": "INSERT",
+      "dynamodb": { "NewImage": { "Status": { "S": "Pending" }, "ItemPK": { "S": "Item-7" } } }
+    },
+    {
+      "eventName": "INSERT",
+      "dynamodb": { "NewImage": { "Status": { "S": "Pending" }, "ItemPK": { "S": "Item-9" } } }
+    },
+    {
+      "eventName": "INSERT",
+      "dynamodb": { "NewImage": { "Status": { "S": "Pending" }, "ItemPK": { "S": "Item-9" } } }
+    },
+    {
+      "eventName": "INSERT",
+      "dynamodb": { "NewImage": { "Status": { "S": "Pending" }, "ItemPK": { "S": "Item-9" } } }
+    },
+    {
+      "eventName": "INSERT",
+      "dynamodb": { "NewImage": { "Status": { "S": "Processed" }, "ItemPK": { "S": "Item-3" } } }
+    },
+    {
+      "eventName": "INSERT",
+      "dynamodb": { "NewImage": { "Status": { "S": "Processed" }, "ItemPK": { "S": "Item-9" } } }
+    }
+  ]
+}
