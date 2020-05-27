@@ -237,7 +237,7 @@ router.post('/process-item', async (req, res) => {
     const params: any = { TransactItems: items };
     result = await dynamodb.transactWrite(params).promise();
     log('Result', result);
-    return res.json({});
+    return res.json({ message: 'Item processed.' });
   } catch (error) {
     log('Error', error);
     return res.status(400).json({ error: error.message });

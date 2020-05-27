@@ -16,8 +16,8 @@ function log(message: string, item: any) {
 }
 
 const data = require('data-api-client')({
-  resourceArn: process.env.ResourceArn,
-  secretArn: process.env.SecretArn,
+  resourceArn: process.env.RESOURCE_ARN,
+  secretArn: process.env.SECRET_ARN,
   database: 'shop',
 });
 

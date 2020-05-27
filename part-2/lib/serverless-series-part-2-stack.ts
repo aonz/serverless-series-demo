@@ -26,7 +26,6 @@ export class ServerlessSeriesPart2Stack extends cdk.Stack {
     });
     new cdk.CfnOutput(this, 'VpcSubnetId1', { value: vpc.isolatedSubnets[0].subnetId });
     new cdk.CfnOutput(this, 'VpcSubnetId2', { value: vpc.isolatedSubnets[1].subnetId });
-    new cdk.CfnOutput(this, 'VpcSecurityGroupId', { value: vpc.vpcDefaultSecurityGroup });
 
     const securityGroup = new ec2.SecurityGroup(this, 'SecurityGroup', {
       securityGroupName: identifier,
@@ -34,6 +33,7 @@ export class ServerlessSeriesPart2Stack extends cdk.Stack {
     });
     securityGroup.addIngressRule(ec2.Peer.ipv4(vpcCidr), ec2.Port.allTraffic());
     securityGroup.addIngressRule(securityGroup, ec2.Port.allTraffic());
+    new cdk.CfnOutput(this, 'SecurityGroupId', { value: securityGroup.securityGroupId });
 
     vpc.addGatewayEndpoint('DynamoDbEndpoint', {
       service: ec2.GatewayVpcEndpointAwsService.DYNAMODB,
@@ -160,8 +160,9 @@ export class ServerlessSeriesPart2Stack extends cdk.Stack {
       vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
       environment: {
-        ResourceArn: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
-        SecretArn: secret.secretArn,
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+        ITEM_TABLE: itemTable.tableName,
       },
     });
     streamsFn.addEventSource(
