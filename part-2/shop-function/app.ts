@@ -13,7 +13,9 @@ router.use(bodyParser.json());
 router.use(bodyParser.urlencoded({ extended: true }));
 router.use(awsServerlessExpressMiddleware.eventContext());
 
-const dynamodb = new AWS.DynamoDB.DocumentClient({ region: process.env.AWS_REGION || 'us-east-1' });
+const dynamodb = new AWS.DynamoDB.DocumentClient({
+  region: process.env.AWS_REGION || 'ap-southeast-1',
+});
 
 const shopTable = process.env.SHOP_TABLE || 'ServerlessSeriesPart2Shop';
 const itemTable = process.env.ITEM_TABLE || 'ServerlessSeriesPart2Item';

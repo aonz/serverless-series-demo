@@ -1,7 +1,7 @@
 import * as AWS from 'aws-sdk';
 import * as util from 'util';
 
-const dynamodb = new AWS.DynamoDB({ region: process.env.AWS_REGION || 'us-east-1' });
+const dynamodb = new AWS.DynamoDB({ region: process.env.AWS_REGION || 'ap-southeast-1' });
 
 const shopTable = process.env.SHOP_TABLE || 'ServerlessSeriesPart2Shop';
 const itemTable = process.env.ITEM_TABLE || 'ServerlessSeriesPart2Item';

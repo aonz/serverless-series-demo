@@ -2,7 +2,7 @@ export {};
 import * as AWS from 'aws-sdk';
 import * as util from 'util';
 // const AWS = require('aws-sdk');
-// const rds = new AWS.RDSDataService({ region: process.env.AWS_REGION || 'us-east-1' });
+// const rds = new AWS.RDSDataService({ region: process.env.AWS_REGION || 'ap-southeast-1' });
 // const params = {
 //   resourceArn: process.env.ResourceArn,
 //   secretArn: process.env.SecretArn,
@@ -21,7 +21,9 @@ const data = require('data-api-client')({
   database: 'shop',
 });
 
-const dynamodb = new AWS.DynamoDB.DocumentClient({ region: process.env.AWS_REGION || 'us-east-1' });
+const dynamodb = new AWS.DynamoDB.DocumentClient({
+  region: process.env.AWS_REGION || 'ap-southeast-1',
+});
 
 const itemTable = process.env.ITEM_TABLE || 'ServerlessSeriesPart2Item';
 

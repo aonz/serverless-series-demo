@@ -5,5 +5,5 @@ import { ServerlessSeriesPart2Stack } from '../lib/serverless-series-part-2-stac
 
 const app = new cdk.App();
 new ServerlessSeriesPart2Stack(app, 'ServerlessSeriesPart2Stack', {
-  env: { region: process.env.AWS_REGION || 'us-east-1' },
+  env: { region: process.env.AWS_REGION || 'ap-southeast-1' },
 });

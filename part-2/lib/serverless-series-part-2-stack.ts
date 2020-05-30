@@ -138,6 +138,7 @@ export class ServerlessSeriesPart2Stack extends cdk.Stack {
       enableHttpEndpoint: true,
     });
     auroraCluster.addDependsOn(dbSubnetGroup);
+    auroraCluster.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY);
     new cdk.CfnOutput(this, 'AuroraEndpoint', { value: auroraCluster.attrEndpointAddress });
 
     // DynamoDB Streams -> Lambda -> Aurora Serverless
