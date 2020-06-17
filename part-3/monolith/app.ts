@@ -62,7 +62,7 @@ function makePayment(id: string, amount: number, transactionId: string) {
       transactionId,
     });
     if (status === 'Exceeded') {
-      const error = new Error('Exceeds payment amount limit');
+      const error = new Error('Exceeds payment amount limit.');
       log('Error - Make payment', error);
       return reject(error);
     }
@@ -84,7 +84,7 @@ function enqueueShipping(id: string, quantity: number, transactionId: string) {
       transactionId,
     });
     if (status === 'Exceeded') {
-      const error = new Error('Exceeds shipping quantity limit');
+      const error = new Error('Exceeds shipping quantity limit.');
       log('Error - Make shipping', error);
       return reject(error);
     }
@@ -105,7 +105,7 @@ async function processPendingRecords(id: string, amount: number, quantity: numbe
     const results = await Promise.allSettled([payment, shipping]);
     log('results', results);
     // Reconcile records.
-    await reconcileRecords(id, results, transactionId);
+    await reconcileRecords(id, results[0].status, results[1].status, transactionId);
     // Commit transaction.
     await data.commitTransaction({ transactionId });
     console.log('Finish - Process pending records');
@@ -116,11 +116,16 @@ async function processPendingRecords(id: string, amount: number, quantity: numbe
   }
 }
 
-async function reconcileRecords(id: string, results: any, transactionId: string) {
+async function reconcileRecords(
+  id: string,
+  paymentStatus: string,
+  shippingStatus: string,
+  transactionId: string
+) {
   let status = 'Processed';
-  if (results[0].status === 'rejected' || results[1].status === 'rejected') {
+  if (paymentStatus === 'rejected' || shippingStatus === 'rejected') {
     status = 'OnHold';
-    if (results[0].status === 'rejected' && results[1].status === 'fulfilled') {
+    if (paymentStatus === 'rejected' && shippingStatus === 'fulfilled') {
       // Reconcile shipping record.
       await data.executeStatement({
         sql: 'UPDATE shipping SET `status` = :status WHERE id = :id',
@@ -131,7 +136,7 @@ async function reconcileRecords(id: string, results: any, transactionId: string)
         transactionId,
       });
     }
-    if (results[0].status === 'fulfilled' && results[1].status === 'rejected') {
+    if (paymentStatus === 'fulfilled' && shippingStatus === 'rejected') {
       // Reconcile payment record.
       await data.executeStatement({
         sql: 'UPDATE payment SET `status` = :status WHERE id = :id',

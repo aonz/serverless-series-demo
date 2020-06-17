@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS shipping.shipping (
 -- DROP TABLE `order`.`order`;
 -- DROP TABLE payment.payment;
 -- DROP TABLE shipping.shipping;
+-- Monolith
 SELECT o.id AS OrderID,
   o.status AS OrderStatus,
   p.status AS PaymentStatus,
@@ -46,5 +47,17 @@ SELECT o.id AS OrderID,
 FROM `order` o,
   payment p,
   shipping s
+WHERE o.id = p.id
+  AND o.id = s.id;
+-- Microservices
+SELECT o.id AS OrderID,
+  o.status AS OrderStatus,
+  p.status AS PaymentStatus,
+  p.amount AS PaymentAmount,
+  s.status AS ShippingStatus,
+  s.quantity AS ShippingQuantity
+FROM `order`.`order` o,
+  payment.payment p,
+  shipping.shipping s
 WHERE o.id = p.id
   AND o.id = s.id;

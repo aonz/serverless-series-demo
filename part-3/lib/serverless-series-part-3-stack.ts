@@ -1,4 +1,5 @@
 import * as cdk from '@aws-cdk/core';
+import * as apigateway from '@aws-cdk/aws-apigateway';
 import * as apigatewayv2 from '@aws-cdk/aws-apigatewayv2';
 import * as ec2 from '@aws-cdk/aws-ec2';
 import * as iam from '@aws-cdk/aws-iam';
@@ -33,6 +34,11 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
 
     vpc.addInterfaceEndpoint('RdsDataEndpoint', {
       service: new ec2.InterfaceVpcEndpointAwsService('rds-data'),
+      subnets: { subnetType: ec2.SubnetType.ISOLATED },
+      securityGroups: [securityGroup],
+    });
+    vpc.addInterfaceEndpoint('ApiGatewayEndpoint', {
+      service: new ec2.InterfaceVpcEndpointAwsService('execute-api'),
       subnets: { subnetType: ec2.SubnetType.ISOLATED },
       securityGroups: [securityGroup],
     });
@@ -87,7 +93,7 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
     });
 
     // Monolith
-    const monolithFn = new lambda.Function(this, 'monolithFunction', {
+    const monolithFn = new lambda.Function(this, 'MonolithFunction', {
       functionName: `${name}Monolith`,
       runtime: lambda.Runtime.NODEJS_12_X,
       handler: 'index.handler',
@@ -108,6 +114,84 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
         handler: monolithFn,
         payloadFormatVersion: apigatewayv2.PayloadFormatVersion.VERSION_1_0,
       }),
+    });
+
+    // Microservices - Request/Response
+    const privateHttpApi = new apigateway.RestApi(this, 'PrivateHttpApi', {
+      policy: new iam.PolicyDocument({
+        statements: [
+          new iam.PolicyStatement({
+            actions: ['execute-api:Invoke'],
+            resources: ['execute-api:/*/*/*'],
+            principals: [new iam.AnyPrincipal()],
+          }),
+        ],
+      }),
+      endpointConfiguration: { types: [apigateway.EndpointType.PRIVATE] },
+    });
+    const rrOrderFn = new lambda.Function(this, 'RrOrderFunction', {
+      functionName: `${name}RequestResponseOrder`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/request-response/order')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+        PAYMENT_URL: `${privateHttpApi.url}payment`,
+        SHIPPING_URL: `${privateHttpApi.url}shipping`,
+      },
+    });
+    httpApi.addRoutes({
+      path: '/microservices/request-response/order/{proxy+}',
+      methods: [apigatewayv2.HttpMethod.ANY],
+      integration: new apigatewayv2.LambdaProxyIntegration({
+        handler: rrOrderFn,
+        payloadFormatVersion: apigatewayv2.PayloadFormatVersion.VERSION_1_0,
+      }),
+    });
+    const rrPaymentFn = new lambda.Function(this, 'RrPaymentFunction', {
+      functionName: `${name}RequestResponsePayment`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/request-response/payment')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+      },
+    });
+    privateHttpApi.root.addResource('payment').addProxy({
+      defaultIntegration: new apigateway.LambdaIntegration(rrPaymentFn),
+    });
+    const rrShippingFn = new lambda.Function(this, 'RrShippingFunction', {
+      functionName: `${name}RequestResponseShipping`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/request-response/shipping')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+      },
+    });
+    privateHttpApi.root.addResource('shipping').addProxy({
+      defaultIntegration: new apigateway.LambdaIntegration(rrShippingFn),
     });
   }
 }

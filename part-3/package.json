@@ -16,6 +16,7 @@
     "typescript": "3.9.5"
   },
   "dependencies": {
+    "@aws-cdk/aws-apigateway": "^1.45.0",
     "@aws-cdk/aws-apigatewayv2": "^1.45.0",
     "@aws-cdk/aws-ec2": "^1.45.0",
     "@aws-cdk/aws-iam": "^1.45.0",
