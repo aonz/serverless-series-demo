@@ -1,0 +1,13 @@
+{
+  "name": "microservices-orchestration-create-order",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "data-api-client": "^1.0.1",
+    "uuid": "^8.1.0"
+  },
+  "devDependencies": {
+    "@types/uuid": "^8.0.0"
+  }
+}

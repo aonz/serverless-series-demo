@@ -1,0 +1,9 @@
+{
+  "name": "microservices-orchestration-create-shipping",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "data-api-client": "^1.0.1"
+  }
+}

@@ -3,7 +3,6 @@ import * as bodyParser from 'body-parser';
 import * as cors from 'cors';
 import * as express from 'express';
 import * as util from 'util';
-import { v4 as uuidv4 } from 'uuid';
 
 const data = require('data-api-client')({
   resourceArn: process.env.RESOURCE_ARN || '',
@@ -36,22 +35,22 @@ router.post('/create-payment', async (req, res) => {
       status: 'Pending',
       amount,
     });
-    res.json({ message: 'Payment was created.', id });
+    res.json({ message: 'Payment was made.', id });
   } catch (error) {
     log('error', error);
     res.status(500).json({ error, id });
   }
 });
 
-router.post('/make-payment', async (req, res) => {
-  log('/make-payment', req.body);
+router.post('/process-payment', async (req, res) => {
+  log('/process-payment', req.body);
   const { id, amount } = req.body;
   try {
     const status = amount <= 1000 ? 'Processed' : 'Exceeded';
     await data.query('UPDATE payment SET `status` = :status WHERE id = :id', { id, status });
     if (status === 'Exceeded') {
       const error = new Error('Exceeds payment amount limit.');
-      log('Error - Make payment', error);
+      log('Error - Process payment', error);
       return res.json({ error: error.message, id });
     }
     return res.json({ message: 'Payment was processed.', id });

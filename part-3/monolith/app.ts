@@ -49,9 +49,9 @@ async function createPendingRecords(id: string, amount: number, quantity: number
   console.log('Finish - Create pending records');
 }
 
-function makePayment(id: string, amount: number, transactionId: string) {
+function processPayment(id: string, amount: number, transactionId: string) {
   return new Promise(async (resolve, reject) => {
-    console.log('Start - Make payment');
+    console.log('Start - Process payment');
     const status = amount <= 1000 ? 'Processed' : 'Exceeded';
     await data.executeStatement({
       sql: 'UPDATE payment SET `status` = :status WHERE id = :id',
@@ -63,15 +63,15 @@ function makePayment(id: string, amount: number, transactionId: string) {
     });
     if (status === 'Exceeded') {
       const error = new Error('Exceeds payment amount limit.');
-      log('Error - Make payment', error);
+      log('Error - Process payment', error);
       return reject(error);
     }
-    console.log('Finish - Make payment');
+    console.log('Finish - Process payment');
     resolve();
   });
 }
 
-function enqueueShipping(id: string, quantity: number, transactionId: string) {
+function processShipping(id: string, quantity: number, transactionId: string) {
   return new Promise(async (resolve, reject) => {
     console.log('Start - Make shipping');
     const status = quantity <= 100 ? 'Processed' : 'Exceeded';
@@ -98,10 +98,10 @@ async function processPendingRecords(id: string, amount: number, quantity: numbe
   log('transactionId', transactionId);
   try {
     console.log('Start - Process pending records');
-    // Make payment
-    const payment = makePayment(id, amount, transactionId);
-    // Enqueue shipping.
-    const shipping = enqueueShipping(id, quantity, transactionId);
+    // Process payment.
+    const payment = processPayment(id, amount, transactionId);
+    // Process shipping.
+    const shipping = processShipping(id, quantity, transactionId);
     const results = await Promise.allSettled([payment, shipping]);
     log('results', results);
     // Reconcile records.

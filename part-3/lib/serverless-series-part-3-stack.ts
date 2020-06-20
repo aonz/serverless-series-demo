@@ -6,6 +6,8 @@ import * as iam from '@aws-cdk/aws-iam';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as rds from '@aws-cdk/aws-rds';
 import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
+import * as stepfunctions from '@aws-cdk/aws-stepfunctions';
+import * as stepfunctionsTasks from '@aws-cdk/aws-stepfunctions-tasks';
 
 import * as path from 'path';
 
@@ -16,7 +18,7 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
     const name = 'ServerlessSeriesPart3';
     const identifier = name.toLowerCase();
 
-    // Shared Infrastructure
+    // #region Shared Infrastructure
     const vpcCidr = '10.0.0.0/20';
     const vpc = new ec2.Vpc(this, 'Vpc', {
       cidr: vpcCidr,
@@ -43,7 +45,7 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
       securityGroups: [securityGroup],
     });
 
-    const httpApi = new apigatewayv2.HttpApi(this, 'HttpApi', { apiName: name });
+    const httpApi = new apigatewayv2.HttpApi(this, 'HttpApi', { apiName: `${name}HttpApi` });
     new cdk.CfnOutput(this, 'HttpApiUrl', { value: <string>httpApi.url });
 
     const secret = new secretsmanager.Secret(this, 'Secret', {
@@ -91,8 +93,8 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
         iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonRDSDataFullAccess'),
       ],
     });
-
-    // Monolith
+    // #endregion Shared Infrastructure
+    // #region Monolith
     const monolithFn = new lambda.Function(this, 'MonolithFunction', {
       functionName: `${name}Monolith`,
       runtime: lambda.Runtime.NODEJS_12_X,
@@ -115,9 +117,10 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
         payloadFormatVersion: apigatewayv2.PayloadFormatVersion.VERSION_1_0,
       }),
     });
-
-    // Microservices - Request/Response
-    const privateHttpApi = new apigateway.RestApi(this, 'PrivateHttpApi', {
+    // #endregion Monolith
+    // #region Microservices - Request/Response
+    const privateRestApi = new apigateway.RestApi(this, 'PrivateRestApi', {
+      restApiName: `${name}PrivateRestApi`,
       policy: new iam.PolicyDocument({
         statements: [
           new iam.PolicyStatement({
@@ -143,8 +146,8 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
       environment: {
         RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
         SECRET_ARN: secret.secretArn,
-        PAYMENT_URL: `${privateHttpApi.url}payment`,
-        SHIPPING_URL: `${privateHttpApi.url}shipping`,
+        PAYMENT_URL: `${privateRestApi.url}payment`,
+        SHIPPING_URL: `${privateRestApi.url}shipping`,
       },
     });
     httpApi.addRoutes({
@@ -171,7 +174,7 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
         SECRET_ARN: secret.secretArn,
       },
     });
-    privateHttpApi.root.addResource('payment').addProxy({
+    privateRestApi.root.addResource('payment').addProxy({
       defaultIntegration: new apigateway.LambdaIntegration(rrPaymentFn),
     });
     const rrShippingFn = new lambda.Function(this, 'RrShippingFunction', {
@@ -190,8 +193,368 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
         SECRET_ARN: secret.secretArn,
       },
     });
-    privateHttpApi.root.addResource('shipping').addProxy({
+    privateRestApi.root.addResource('shipping').addProxy({
       defaultIntegration: new apigateway.LambdaIntegration(rrShippingFn),
     });
+    // #endregion Microservices - Request/Response
+    // #region Microservices - Orchestration
+    const ocCreateOrderFn = new lambda.Function(this, 'OcCreateOrderFunction', {
+      functionName: `${name}OrchestrationCreateOrder`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/orchestration/create-order')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+      },
+    });
+    const ocProcessOrderFn = new lambda.Function(this, 'OcProcessOrderFunction', {
+      functionName: `${name}OrchestrationProcessOrder`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/orchestration/process-order')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+      },
+    });
+    const ocReconcileOrderFn = new lambda.Function(this, 'OcReconcileOrderFunction', {
+      functionName: `${name}OrchestrationReconcileOrder`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/orchestration/reconcile-order')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+      },
+    });
+    const ocCreatePaymentFn = new lambda.Function(this, 'OcCreatePaymentFunction', {
+      functionName: `${name}OrchestrationCreatePayment`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/orchestration/create-payment')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+      },
+    });
+    const ocProcessPaymentFn = new lambda.Function(this, 'OcProcessPaymentFunction', {
+      functionName: `${name}OrchestrationProcessPayment`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/orchestration/process-payment')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+      },
+    });
+    const ocReconcilePaymentFn = new lambda.Function(this, 'OcReconcilePaymentFunction', {
+      functionName: `${name}OrchestrationReconcilePayment`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/orchestration/reconcile-payment')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+      },
+    });
+    const ocCreateShippingFn = new lambda.Function(this, 'OcCreateShippingFunction', {
+      functionName: `${name}OrchestrationCreateShipping`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/orchestration/create-shipping')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+      },
+    });
+    const ocProcessShippingFn = new lambda.Function(this, 'OcProcessShippingFunction', {
+      functionName: `${name}OrchestrationProcessShipping`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/orchestration/process-shipping')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+      },
+    });
+    const ocReconcileShippingFn = new lambda.Function(this, 'OcReconcileShippingFunction', {
+      functionName: `${name}OrchestrationReconcileShipping`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/orchestration/reconcile-shipping')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+      },
+    });
+    // Happy Path
+    const startState = new stepfunctions.Pass(this, 'Start');
+    const finishState = new stepfunctions.Succeed(this, 'Finish');
+    // Create
+    const createOrderState = new stepfunctions.Task(this, 'Create Order', {
+      task: new stepfunctionsTasks.RunLambdaTask(ocCreateOrderFn),
+      parameters: { 'Payload.$': '$' },
+      outputPath: '$.Payload',
+    });
+    const createPaymentState = new stepfunctions.Task(this, 'Create Payment', {
+      task: new stepfunctionsTasks.RunLambdaTask(ocCreatePaymentFn),
+      parameters: { Payload: { 'id.$': '$.id', 'amount.$': '$.amount' } },
+      outputPath: '$.Payload',
+    });
+    const createShippingState = new stepfunctions.Task(this, 'Create Shipping', {
+      task: new stepfunctionsTasks.RunLambdaTask(ocCreateShippingFn),
+      parameters: { Payload: { 'id.$': '$.id', 'quantity.$': '$.quantity' } },
+      outputPath: '$.Payload',
+    });
+    const parallelCreateState = new stepfunctions.Parallel(this, 'Parallel Create', {
+      resultPath: '$.results',
+    });
+    parallelCreateState.branch(createPaymentState);
+    parallelCreateState.branch(createShippingState);
+    // Process
+    const processPaymentState = new stepfunctions.Task(this, 'Process Payment', {
+      task: new stepfunctionsTasks.RunLambdaTask(ocProcessPaymentFn),
+      parameters: { Payload: { 'id.$': '$.id', 'amount.$': '$.amount' } },
+      outputPath: '$.Payload',
+    });
+    const processShippingState = new stepfunctions.Task(this, 'Process Shipping', {
+      task: new stepfunctionsTasks.RunLambdaTask(ocProcessShippingFn),
+      parameters: { Payload: { 'id.$': '$.id', 'quantity.$': '$.quantity' } },
+      outputPath: '$.Payload',
+    });
+    const parallelProcessState = new stepfunctions.Parallel(this, 'Parallel Process', {
+      resultPath: '$.results',
+    });
+    parallelProcessState.branch(processPaymentState);
+    parallelProcessState.branch(processShippingState);
+    const processOrderState = new stepfunctions.Task(this, 'Process Order', {
+      task: new stepfunctionsTasks.RunLambdaTask(ocProcessOrderFn),
+      parameters: { Payload: { 'id.$': '$.id' } },
+      outputPath: '$.Payload',
+    });
+    let definition: any;
+    const withErrorHandlers = true;
+    if (!withErrorHandlers) {
+      definition = startState
+        .next(createOrderState)
+        .next(parallelCreateState)
+        .next(parallelProcessState)
+        .next(processOrderState)
+        .next(finishState);
+    } else {
+      const errorState = new stepfunctions.Fail(this, 'Error');
+      createOrderState.addCatch(errorState);
+      createOrderState.addRetry({
+        errors: ['RandomError'],
+        interval: cdk.Duration.seconds(1),
+        maxAttempts: 3,
+        backoffRate: 2,
+      });
+      const createPaymentErrorState = new stepfunctions.Fail(this, 'Create Payment Error');
+      parallelCreateState.addCatch(createPaymentErrorState, { errors: ['InvalidPaymentError'] });
+      parallelCreateState.addCatch(errorState);
+      parallelProcessState.addCatch(errorState);
+      processOrderState.addCatch(errorState);
+      // Reconcile - Payment and Shipping Errors
+      const reconcileOrderAllErrorsState = new stepfunctions.Task(
+        this,
+        'Payment and Shipping Errors - Reconcile Order',
+        {
+          task: new stepfunctionsTasks.RunLambdaTask(ocReconcileOrderFn),
+          parameters: { Payload: { 'id.$': '$.id', status: 'OnHold' } },
+          outputPath: '$.Payload',
+        }
+      );
+      // Reconcile - Payment Error
+      const reconcileOrderPaymentErrorState = new stepfunctions.Task(
+        this,
+        'Payment Error - Reconcile Order',
+        {
+          task: new stepfunctionsTasks.RunLambdaTask(ocReconcileOrderFn),
+          parameters: { Payload: { 'id.$': '$.id', 'status.$': '$.results[0].status' } },
+          outputPath: '$.Payload',
+        }
+      );
+      const reconcileShippingPaymentErrorState = new stepfunctions.Task(
+        this,
+        'Payment Error - Reconcile Shipping',
+        {
+          task: new stepfunctionsTasks.RunLambdaTask(ocReconcileShippingFn),
+          parameters: { Payload: { 'id.$': '$.id', 'status.$': '$.results[0].status' } },
+          outputPath: '$.Payload',
+        }
+      );
+      const parallelReconcilePaymentErrorState = new stepfunctions.Parallel(
+        this,
+        'Parallel Reconcile - Payment Error',
+        { resultPath: '$.Payload.results', outputPath: '$.Payload' }
+      );
+      parallelReconcilePaymentErrorState.branch(reconcileOrderPaymentErrorState);
+      parallelReconcilePaymentErrorState.branch(reconcileShippingPaymentErrorState);
+      parallelReconcilePaymentErrorState.addCatch(errorState);
+      // Reconcile - Shipping Error
+      const reconcileOrderShippingErrorState = new stepfunctions.Task(
+        this,
+        'Shipping Error - Reconcile Order',
+        {
+          task: new stepfunctionsTasks.RunLambdaTask(ocReconcileOrderFn),
+          parameters: { Payload: { 'id.$': '$.id', 'status.$': '$.results[1].status' } },
+          outputPath: '$.Payload',
+        }
+      );
+      const reconcilePaymentShippingErrorState = new stepfunctions.Task(
+        this,
+        'Shipping Error - Reconcile Payment',
+        {
+          task: new stepfunctionsTasks.RunLambdaTask(ocReconcilePaymentFn),
+          parameters: { Payload: { 'id.$': '$.id', 'status.$': '$.results[1].status' } },
+          outputPath: '$.Payload',
+        }
+      );
+      const parallelReconcileShippingErrorState = new stepfunctions.Parallel(
+        this,
+        'Parallel Reconcile - Shipping Error',
+        { resultPath: '$.Payload.results', outputPath: '$.Payload' }
+      );
+      parallelReconcileShippingErrorState.branch(reconcileOrderShippingErrorState);
+      parallelReconcileShippingErrorState.branch(reconcilePaymentShippingErrorState);
+      parallelReconcileShippingErrorState.addCatch(errorState);
+      const choiceState = new stepfunctions.Choice(this, 'Check Results');
+      choiceState.when(
+        stepfunctions.Condition.and(
+          stepfunctions.Condition.stringEquals('$.results[0].message', ''),
+          stepfunctions.Condition.stringEquals('$.results[1].message', '')
+        ),
+        reconcileOrderAllErrorsState
+      );
+      choiceState.when(
+        stepfunctions.Condition.stringEquals('$.results[0].message', ''),
+        parallelReconcilePaymentErrorState
+      );
+      choiceState.when(
+        stepfunctions.Condition.stringEquals('$.results[1].message', ''),
+        parallelReconcileShippingErrorState
+      );
+      choiceState.otherwise(processOrderState);
+      definition = startState
+        .next(createOrderState)
+        .next(parallelCreateState)
+        .next(parallelProcessState)
+        .next(choiceState.afterwards())
+        .next(finishState);
+    }
+    const stateMachineRole = new iam.Role(this, 'StateMachineRole', {
+      roleName: `${name}StateMachineRole`,
+      assumedBy: new iam.ServicePrincipal('states.amazonaws.com'),
+      managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaRole')],
+    });
+    const stateMachine = new stepfunctions.StateMachine(this, 'StateMachine', {
+      stateMachineName: 'StepFunctionDemo-StateMachine',
+      definition,
+      timeout: cdk.Duration.minutes(1),
+      role: stateMachineRole,
+    });
+    const restApi = new apigateway.RestApi(this, 'RestApi', {
+      restApiName: `${name}RestApi`,
+      endpointConfiguration: { types: [apigateway.EndpointType.REGIONAL] },
+    });
+    const restApiRole = new iam.Role(this, 'RestApiRole', {
+      roleName: `${name}RestApiRole`,
+      assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+    });
+    stateMachine.grantStartExecution(restApiRole);
+    const integration = new apigateway.AwsIntegration({
+      service: 'states',
+      action: 'StartExecution',
+      options: {
+        credentialsRole: restApiRole,
+        requestTemplates: {
+          'application/json': JSON.stringify({
+            stateMachineArn: stateMachine.stateMachineArn,
+            input: `$util.escapeJavaScript($input.json('$'))`,
+          }),
+        },
+        passthroughBehavior: apigateway.PassthroughBehavior.NEVER,
+        integrationResponses: [
+          {
+            statusCode: '200',
+            responseTemplates: { 'application/json': "$input.json('$')" },
+            // responseTemplates: {
+            //   'application/json': JSON.stringify({
+            //     token: `$input.json('$.executionArn').split(':')[7].replaceAll('"', '')`,
+            //   }),
+            // },
+          },
+        ],
+      },
+    });
+    restApi.root
+      .addResource('orchestration')
+      .addResource('order')
+      .addResource('create-order')
+      .addMethod('POST', integration, {
+        methodResponses: [
+          {
+            statusCode: '200',
+            responseModels: { 'application/json': new apigateway.EmptyModel() },
+          },
+        ],
+      });
+    // #endregion Microservices - Orchestration
   }
 }

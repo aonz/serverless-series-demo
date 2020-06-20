@@ -51,13 +51,13 @@ async function createPendingRecords(id: string, amount: number, quantity: number
 async function processPendingRecords(id: string, amount: number, quantity: number) {
   try {
     console.log('Start - Process pending records');
-    // Make payment
-    const payment = got.post(`${process.env.PAYMENT_URL}/make-payment`, {
+    // Process payment
+    const payment = got.post(`${process.env.PAYMENT_URL}/process-payment`, {
       json: { id, amount },
       responseType: 'json',
     });
-    // Enqueue shipping.
-    const shipping = got.post(`${process.env.SHIPPING_URL}/enqueue-shipping`, {
+    // Process shipping.
+    const shipping = got.post(`${process.env.SHIPPING_URL}/process-shipping`, {
       json: { id, quantity },
       responseType: 'json',
     });

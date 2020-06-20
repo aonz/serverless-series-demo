@@ -3,7 +3,6 @@ import * as bodyParser from 'body-parser';
 import * as cors from 'cors';
 import * as express from 'express';
 import * as util from 'util';
-import { v4 as uuidv4 } from 'uuid';
 
 const data = require('data-api-client')({
   resourceArn: process.env.RESOURCE_ARN || '',
@@ -46,8 +45,8 @@ router.post('/create-shipping', async (req, res) => {
   }
 });
 
-router.post('/enqueue-shipping', async (req, res) => {
-  log('/enqueue-shipping', req.body);
+router.post('/process-shipping', async (req, res) => {
+  log('/process-shipping', req.body);
   const { id, quantity } = req.body;
   try {
     const status = quantity <= 100 ? 'Processed' : 'Exceeded';
