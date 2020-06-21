@@ -19,6 +19,14 @@ CREATE TABLE IF NOT EXISTS `order`.`order` (
   id VARCHAR(255) PRIMARY KEY,
   `status` VARCHAR(10)
 );
+CREATE TABLE IF NOT EXISTS `order`.context (
+  id VARCHAR(255) PRIMARY KEY,
+  `order` VARCHAR(10),
+  payment VARCHAR(10),
+  shipping VARCHAR(10),
+  amount INT,
+  quantity INT
+);
 CREATE DATABASE IF NOT EXISTS `payment`;
 CREATE TABLE IF NOT EXISTS payment.payment (
   id VARCHAR(255) PRIMARY KEY,
@@ -35,6 +43,7 @@ CREATE TABLE IF NOT EXISTS shipping.shipping (
 -- DROP TABLE shop.payment;
 -- DROP TABLE shop.shipping;
 -- DROP TABLE `order`.`order`;
+-- DROP TABLE `order`.context;
 -- DROP TABLE payment.payment;
 -- DROP TABLE shipping.shipping;
 -- Monolith
@@ -61,3 +70,22 @@ FROM `order`.`order` o,
   shipping.shipping s
 WHERE o.id = p.id
   AND o.id = s.id;
+-- Microservices - Choreography
+SELECT *
+FROM `order`.context;
+SELECT o.id AS OrderID,
+  o.status AS OrderStatus,
+  p.status AS PaymentStatus,
+  p.amount AS PaymentAmount,
+  s.status AS ShippingStatus,
+  s.quantity AS ShippingQuantity,
+  c.`order` AS `Order`,
+  c.payment AS Payment,
+  c.shipping AS Shipping
+FROM `order`.`order` o,
+  payment.payment p,
+  shipping.shipping s,
+  `order`.context c
+WHERE o.id = p.id
+  AND o.id = s.id
+  AND o.id = c.id;

@@ -1,5 +1,4 @@
 import * as util from 'util';
-import { v4 as uuidv4 } from 'uuid';
 
 function log(message: string, item: any) {
   console.log(`${message}:\n ${util.inspect(item, { showHidden: false, depth: null })}`);
@@ -20,11 +19,11 @@ class RandomError extends Error {
 
 let attempt = 0;
 
-exports.handler = async (event: any, context: any, callback: any) => {
+exports.handler = async (event: any, context: any) => {
   log('Event', event);
   log('Context', context);
   try {
-    const { amount, quantity } = event;
+    const { amount, quantity } = event.body;
     if (amount === 777) {
       log('attempt', attempt);
       attempt++;
@@ -34,7 +33,7 @@ exports.handler = async (event: any, context: any, callback: any) => {
         attempt = 0;
       }
     }
-    const id = uuidv4();
+    const id = event.executionId.split(':')[7];
     log('id', id);
     await data.query('INSERT INTO `order` (id, `status`) VALUES(:id, :status)', {
       id,

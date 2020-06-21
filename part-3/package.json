@@ -19,6 +19,8 @@
     "@aws-cdk/aws-apigateway": "^1.46.0",
     "@aws-cdk/aws-apigatewayv2": "^1.46.0",
     "@aws-cdk/aws-ec2": "^1.46.0",
+    "@aws-cdk/aws-events": "^1.46.0",
+    "@aws-cdk/aws-events-targets": "^1.46.0",
     "@aws-cdk/aws-iam": "^1.46.0",
     "@aws-cdk/aws-rds": "^1.46.0",
     "@aws-cdk/aws-secretsmanager": "^1.46.0",

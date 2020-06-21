@@ -18,8 +18,6 @@ exports.handler = async (event: any, context: any) => {
     const status = quantity <= 100 ? 'Processed' : 'Exceeded';
     await data.query('UPDATE shipping SET `status` = :status WHERE id = :id', { id, status });
     if (status === 'Exceeded') {
-      const error = new Error('Exceeds shipping quantity limit.');
-      log('Error - Make shipping', error);
       return { message: '', error: 'Exceeds shipping quantity limit.', status: 'OnHold' };
     }
     return { message: 'Shipping was processed.' };

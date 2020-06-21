@@ -1,5 +1,5 @@
 {
-  "name": "microservices-orchestration-create-order",
+  "name": "microservices-orchestration-reconcile-payment",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",

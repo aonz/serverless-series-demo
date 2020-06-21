@@ -2,6 +2,8 @@ import * as cdk from '@aws-cdk/core';
 import * as apigateway from '@aws-cdk/aws-apigateway';
 import * as apigatewayv2 from '@aws-cdk/aws-apigatewayv2';
 import * as ec2 from '@aws-cdk/aws-ec2';
+import * as events from '@aws-cdk/aws-events';
+import * as eventsTargets from '@aws-cdk/aws-events-targets';
 import * as iam from '@aws-cdk/aws-iam';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as rds from '@aws-cdk/aws-rds';
@@ -41,6 +43,11 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
     });
     vpc.addInterfaceEndpoint('ApiGatewayEndpoint', {
       service: new ec2.InterfaceVpcEndpointAwsService('execute-api'),
+      subnets: { subnetType: ec2.SubnetType.ISOLATED },
+      securityGroups: [securityGroup],
+    });
+    vpc.addInterfaceEndpoint('EventBridgeEndpoint', {
+      service: new ec2.InterfaceVpcEndpointAwsService('events'),
       subnets: { subnetType: ec2.SubnetType.ISOLATED },
       securityGroups: [securityGroup],
     });
@@ -91,6 +98,7 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaVPCAccessExecutionRole'),
         iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonRDSDataFullAccess'),
+        iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEventBridgeFullAccess'),
       ],
     });
     // #endregion Shared Infrastructure
@@ -348,7 +356,12 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
     // Create
     const createOrderState = new stepfunctions.Task(this, 'Create Order', {
       task: new stepfunctionsTasks.RunLambdaTask(ocCreateOrderFn),
-      parameters: { 'Payload.$': '$' },
+      parameters: {
+        Payload: {
+          body: '$',
+          'executionId.$': '$$.Execution.Id',
+        },
+      },
       outputPath: '$.Payload',
     });
     const createPaymentState = new stepfunctions.Task(this, 'Create Payment', {
@@ -388,8 +401,8 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
       outputPath: '$.Payload',
     });
     let definition: any;
-    const withErrorHandlers = true;
-    if (!withErrorHandlers) {
+    const ocWithErrorHandlers = true;
+    if (!ocWithErrorHandlers) {
       definition = startState
         .next(createOrderState)
         .next(parallelCreateState)
@@ -544,6 +557,7 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
       },
     });
     restApi.root
+      .addResource('microservices')
       .addResource('orchestration')
       .addResource('order')
       .addResource('create-order')
@@ -556,5 +570,261 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
         ],
       });
     // #endregion Microservices - Orchestration
+    // #region Microservices - Choreography
+    const eventBus = new events.EventBus(this, 'EventBus', { eventBusName: name });
+    const crOrderContextFn = new lambda.Function(this, 'CrOrderContextFunction', {
+      functionName: `${name}ChoreographyOrderContext`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/choreography/order-context')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+        EVENT_BUS_NAME: eventBus.eventBusName,
+      },
+    });
+    const crCreateOrderFn = new lambda.Function(this, 'CrCreateOrderFunction', {
+      functionName: `${name}ChoreographyCreateOrder`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/choreography/create-order')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+        EVENT_BUS_NAME: eventBus.eventBusName,
+      },
+    });
+    const crProcessOrderFn = new lambda.Function(this, 'CrProcessOrderFunction', {
+      functionName: `${name}ChoreographyProcessOrder`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/choreography/process-order')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+        EVENT_BUS_NAME: eventBus.eventBusName,
+      },
+    });
+    const crReconcileOrderFn = new lambda.Function(this, 'CrReconcileOrderFunction', {
+      functionName: `${name}ChoreographyReconcileOrder`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/choreography/reconcile-order')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+        EVENT_BUS_NAME: eventBus.eventBusName,
+      },
+    });
+    const crCreatePaymentFn = new lambda.Function(this, 'CrCreatePaymentFunction', {
+      functionName: `${name}ChoreographyCreatePayment`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/choreography/create-payment')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+        EVENT_BUS_NAME: eventBus.eventBusName,
+      },
+    });
+    const crProcessPaymentFn = new lambda.Function(this, 'CrProcessPaymentFunction', {
+      functionName: `${name}ChoreographyProcessPayment`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/choreography/process-payment')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+        EVENT_BUS_NAME: eventBus.eventBusName,
+      },
+    });
+    const crReconcilePaymentFn = new lambda.Function(this, 'CrReconcilePaymentFunction', {
+      functionName: `${name}ChoreographyReconcilePayment`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/choreography/reconcile-payment')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+        EVENT_BUS_NAME: eventBus.eventBusName,
+      },
+    });
+    const crCreateShippingFn = new lambda.Function(this, 'CrCreateShippingFunction', {
+      functionName: `${name}ChoreographyCreateShipping`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/choreography/create-shipping')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+        EVENT_BUS_NAME: eventBus.eventBusName,
+      },
+    });
+    const crProcessShippingFn = new lambda.Function(this, 'CrProcessShippingFunction', {
+      functionName: `${name}ChoreographyProcessShipping`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/choreography/process-shipping')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+        EVENT_BUS_NAME: eventBus.eventBusName,
+      },
+    });
+    const crReconcileShippingFn = new lambda.Function(this, 'CrReconcileShippingFunction', {
+      functionName: `${name}ChoreographyReconcileShipping`,
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, '../', 'microservices/choreography/reconcile-shipping')
+      ),
+      timeout: cdk.Duration.seconds(10),
+      role: lambdaRole,
+      vpc,
+      vpcSubnets: { subnetType: ec2.SubnetType.ISOLATED },
+      environment: {
+        RESOURCE_ARN: `arn:aws:rds:${this.region}:${this.account}:cluster:${auroraCluster.dbClusterIdentifier}`,
+        SECRET_ARN: secret.secretArn,
+        EVENT_BUS_NAME: eventBus.eventBusName,
+      },
+    });
+    const event = events.RuleTargetInput.fromEventPath('$');
+    new events.Rule(this, 'CreateOrderRule', {
+      ruleName: `${name}CreateOrder`,
+      eventBus,
+      eventPattern: { source: ['OrderContext'], detailType: ['CreateOrder'] },
+      targets: [new eventsTargets.LambdaFunction(crCreateOrderFn, { event })],
+    });
+    new events.Rule(this, 'CreatePaymentRule', {
+      ruleName: `${name}CreatePayment`,
+      eventBus,
+      eventPattern: { source: ['OrderContext'], detailType: ['CreatePayment'] },
+      targets: [new eventsTargets.LambdaFunction(crCreatePaymentFn, { event })],
+    });
+    new events.Rule(this, 'CreateShippingRule', {
+      ruleName: `${name}CreateShipping`,
+      eventBus,
+      eventPattern: { source: ['OrderContext'], detailType: ['CreateShipping'] },
+      targets: [new eventsTargets.LambdaFunction(crCreateShippingFn, { event })],
+    });
+    new events.Rule(this, 'ProcessOrderRule', {
+      ruleName: `${name}ProcessOrder`,
+      eventBus,
+      eventPattern: { source: ['OrderContext'], detailType: ['ProcessOrder'] },
+      targets: [new eventsTargets.LambdaFunction(crProcessOrderFn, { event })],
+    });
+    new events.Rule(this, 'ProcessPaymentRule', {
+      ruleName: `${name}ProcessPayment`,
+      eventBus,
+      eventPattern: { source: ['OrderContext'], detailType: ['ProcessPayment'] },
+      targets: [new eventsTargets.LambdaFunction(crProcessPaymentFn, { event })],
+    });
+    new events.Rule(this, 'ProcessShippingRule', {
+      ruleName: `${name}ProcessShipping`,
+      eventBus,
+      eventPattern: { source: ['OrderContext'], detailType: ['ProcessShipping'] },
+      targets: [new eventsTargets.LambdaFunction(crProcessShippingFn, { event })],
+    });
+    const source = [
+      'CreateOrder',
+      'CreatePayment',
+      'CreateShipping',
+      'ProcessOrder',
+      'ProcessPayment',
+      'ProcessShipping',
+    ];
+    const detailType = ['Success'];
+    const crWithErrorHandlers = true;
+    if (crWithErrorHandlers) {
+      source.push('ReconcileOrder', 'ReconcilePayment', 'ReconcileShipping');
+      detailType.push('Reconcile', 'Error');
+      new events.Rule(this, 'ReconcileOrderRule', {
+        ruleName: `${name}ReconcileOrder`,
+        eventBus,
+        eventPattern: { source: ['OrderContext'], detailType: ['ReconcileOrder'] },
+        targets: [new eventsTargets.LambdaFunction(crReconcileOrderFn, { event })],
+      });
+      new events.Rule(this, 'ReconcilePaymentRule', {
+        ruleName: `${name}ReconcilePayment`,
+        eventBus,
+        eventPattern: { source: ['OrderContext'], detailType: ['ReconcilePayment'] },
+        targets: [new eventsTargets.LambdaFunction(crReconcilePaymentFn, { event })],
+      });
+      new events.Rule(this, 'ReconcileShippingRule', {
+        ruleName: `${name}ReconcileShipping`,
+        eventBus,
+        eventPattern: { source: ['OrderContext'], detailType: ['ReconcileShipping'] },
+        targets: [new eventsTargets.LambdaFunction(crReconcileShippingFn, { event })],
+      });
+    }
+    new events.Rule(this, 'CreateOrderContextRule', {
+      ruleName: `${name}OrderContext`,
+      eventBus,
+      eventPattern: { source, detailType },
+      targets: [new eventsTargets.LambdaFunction(crOrderContextFn, { event })],
+    });
+    httpApi.addRoutes({
+      path: '/microservices/choreography/order/create-order',
+      methods: [apigatewayv2.HttpMethod.POST],
+      integration: new apigatewayv2.LambdaProxyIntegration({
+        handler: crOrderContextFn,
+        payloadFormatVersion: apigatewayv2.PayloadFormatVersion.VERSION_2_0,
+      }),
+    });
+    // #endregion Microservices - Choreography
   }
 }
