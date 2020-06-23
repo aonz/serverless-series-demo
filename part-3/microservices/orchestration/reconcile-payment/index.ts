@@ -15,6 +15,7 @@ exports.handler = async (event: any, context: any) => {
   log('Context', context);
   try {
     const { id, status } = event;
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     await data.query('UPDATE payment SET `status` = :status WHERE id = :id', { id, status });
     return { message: 'Payment was reconciled.' };
   } catch (error) {

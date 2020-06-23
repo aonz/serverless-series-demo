@@ -20,6 +20,7 @@ exports.handler = async (event: any, context: any) => {
   log('body', body);
   const { id, status } = body;
   try {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     await data.query('UPDATE `order` SET `status` = :status WHERE id = :id', { id, status });
     // Send Event(s)
     const params = {

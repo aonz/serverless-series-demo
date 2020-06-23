@@ -2,11 +2,6 @@
 # yarn lockfile v1
 
 
-"@types/uuid@^8.0.0":
-  version "8.0.0"
-  resolved "https://registry.yarnpkg.com/@types/uuid/-/uuid-8.0.0.tgz#165aae4819ad2174a17476dbe66feebd549556c0"
-  integrity sha512-xSQfNcvOiE5f9dyd4Kzxbof1aTrLobL278pGLKOZI6esGfZ7ts9Ka16CzIN6Y8hFHE1C7jIBZokULhK1bOgjRw==
-
 data-api-client@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/data-api-client/-/data-api-client-1.0.1.tgz#816798fb2f25dabf80e54dceb5e0d3ec1ed4dd6c"
@@ -18,8 +13,3 @@ sqlstring@^2.3.1:
   version "2.3.2"
   resolved "https://registry.yarnpkg.com/sqlstring/-/sqlstring-2.3.2.tgz#cdae7169389a1375b18e885f2e60b3e460809514"
   integrity sha512-vF4ZbYdKS8OnoJAWBmMxCQDkiEBkGQYU7UZPtL8flbDRSNkhaXvRJ279ZtI6M+zDaQovVU4tuRgzK5fVhvFAhg==
-
-uuid@^8.1.0:
-  version "8.1.0"
-  resolved "https://registry.yarnpkg.com/uuid/-/uuid-8.1.0.tgz#6f1536eb43249f473abc6bd58ff983da1ca30d8d"
-  integrity sha512-CI18flHDznR0lq54xBycOVmphdCYnQLKn8abKn7PXUiKUGdEd+/l9LWNJmugXel4hXq7S+RMNl34ecyC9TntWg==

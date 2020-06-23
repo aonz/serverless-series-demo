@@ -3,6 +3,8 @@
 DIR=$(cd `dirname $0` && pwd)
 echo "DIR: ${DIR}"
 
+yarn
+
 cd ${DIR}/monolith
 rm -rf node_modules
 yarn

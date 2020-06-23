@@ -15,6 +15,7 @@ exports.handler = async (event: any, context: any) => {
   log('Context', context);
   try {
     const { id, amount } = event;
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     const status = amount <= 1000 ? 'Processed' : 'Exceeded';
     await data.query('UPDATE payment SET `status` = :status WHERE id = :id', { id, status });
     if (status === 'Exceeded') {

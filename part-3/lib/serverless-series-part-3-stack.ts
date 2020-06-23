@@ -4,6 +4,7 @@ import * as apigatewayv2 from '@aws-cdk/aws-apigatewayv2';
 import * as ec2 from '@aws-cdk/aws-ec2';
 import * as events from '@aws-cdk/aws-events';
 import * as eventsTargets from '@aws-cdk/aws-events-targets';
+import * as eventschemas from '@aws-cdk/aws-eventschemas';
 import * as iam from '@aws-cdk/aws-iam';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as rds from '@aws-cdk/aws-rds';
@@ -358,7 +359,7 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
       task: new stepfunctionsTasks.RunLambdaTask(ocCreateOrderFn),
       parameters: {
         Payload: {
-          body: '$',
+          'body.$': '$',
           'executionId.$': '$$.Execution.Id',
         },
       },
@@ -572,6 +573,7 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
     // #endregion Microservices - Orchestration
     // #region Microservices - Choreography
     const eventBus = new events.EventBus(this, 'EventBus', { eventBusName: name });
+    new eventschemas.CfnDiscoverer(this, 'SchemaDiscovery', { sourceArn: eventBus.eventBusArn });
     const crOrderContextFn = new lambda.Function(this, 'CrOrderContextFunction', {
       functionName: `${name}ChoreographyOrderContext`,
       runtime: lambda.Runtime.NODEJS_12_X,
@@ -749,23 +751,14 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
       eventPattern: { source: ['OrderContext'], detailType: ['CreateOrder'] },
       targets: [new eventsTargets.LambdaFunction(crCreateOrderFn, { event })],
     });
-    new events.Rule(this, 'CreatePaymentRule', {
-      ruleName: `${name}CreatePayment`,
+    new events.Rule(this, 'OrderCreatedRule', {
+      ruleName: `${name}OrderCreated`,
       eventBus,
-      eventPattern: { source: ['OrderContext'], detailType: ['CreatePayment'] },
-      targets: [new eventsTargets.LambdaFunction(crCreatePaymentFn, { event })],
-    });
-    new events.Rule(this, 'CreateShippingRule', {
-      ruleName: `${name}CreateShipping`,
-      eventBus,
-      eventPattern: { source: ['OrderContext'], detailType: ['CreateShipping'] },
-      targets: [new eventsTargets.LambdaFunction(crCreateShippingFn, { event })],
-    });
-    new events.Rule(this, 'ProcessOrderRule', {
-      ruleName: `${name}ProcessOrder`,
-      eventBus,
-      eventPattern: { source: ['OrderContext'], detailType: ['ProcessOrder'] },
-      targets: [new eventsTargets.LambdaFunction(crProcessOrderFn, { event })],
+      eventPattern: { source: ['OrderContext'], detailType: ['OrderCreated'] },
+      targets: [
+        new eventsTargets.LambdaFunction(crCreatePaymentFn, { event }),
+        new eventsTargets.LambdaFunction(crCreateShippingFn, { event }),
+      ],
     });
     new events.Rule(this, 'ProcessPaymentRule', {
       ruleName: `${name}ProcessPayment`,
@@ -778,6 +771,12 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
       eventBus,
       eventPattern: { source: ['OrderContext'], detailType: ['ProcessShipping'] },
       targets: [new eventsTargets.LambdaFunction(crProcessShippingFn, { event })],
+    });
+    new events.Rule(this, 'ProcessOrderRule', {
+      ruleName: `${name}ProcessOrder`,
+      eventBus,
+      eventPattern: { source: ['OrderContext'], detailType: ['ProcessOrder'] },
+      targets: [new eventsTargets.LambdaFunction(crProcessOrderFn, { event })],
     });
     const source = [
       'CreateOrder',
@@ -811,7 +810,7 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
         targets: [new eventsTargets.LambdaFunction(crReconcileShippingFn, { event })],
       });
     }
-    new events.Rule(this, 'CreateOrderContextRule', {
+    new events.Rule(this, 'OrderContextRule', {
       ruleName: `${name}OrderContext`,
       eventBus,
       eventPattern: { source, detailType },

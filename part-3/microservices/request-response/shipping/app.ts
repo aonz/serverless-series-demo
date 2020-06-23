@@ -49,6 +49,7 @@ router.post('/process-shipping', async (req, res) => {
   log('/process-shipping', req.body);
   const { id, quantity } = req.body;
   try {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     const status = quantity <= 100 ? 'Processed' : 'Exceeded';
     await data.query('UPDATE shipping SET `status` = :status WHERE id = :id', { id, status });
     if (status === 'Exceeded') {
@@ -67,6 +68,7 @@ router.post('/reconcile-shipping', async (req, res) => {
   log('/reconcile-shipping', req.body);
   const { id } = req.body;
   try {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     await data.query('UPDATE shipping SET `status` = :status WHERE id = :id', {
       id,
       status: 'OnHold',

@@ -52,6 +52,7 @@ async function createPendingRecords(id: string, amount: number, quantity: number
 function processPayment(id: string, amount: number, transactionId: string) {
   return new Promise(async (resolve, reject) => {
     console.log('Start - Process payment');
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     const status = amount <= 1000 ? 'Processed' : 'Exceeded';
     await data.executeStatement({
       sql: 'UPDATE payment SET `status` = :status WHERE id = :id',
@@ -74,6 +75,7 @@ function processPayment(id: string, amount: number, transactionId: string) {
 function processShipping(id: string, quantity: number, transactionId: string) {
   return new Promise(async (resolve, reject) => {
     console.log('Start - Make shipping');
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     const status = quantity <= 100 ? 'Processed' : 'Exceeded';
     await data.executeStatement({
       sql: 'UPDATE shipping SET `status` = :status WHERE id = :id',
@@ -125,6 +127,7 @@ async function reconcileRecords(
   let status = 'Processed';
   if (paymentStatus === 'rejected' || shippingStatus === 'rejected') {
     status = 'OnHold';
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     if (paymentStatus === 'rejected' && shippingStatus === 'fulfilled') {
       // Reconcile shipping record.
       await data.executeStatement({
@@ -149,6 +152,7 @@ async function reconcileRecords(
     }
   }
   // Update order's status to "Processed" of "OnHold".
+  await new Promise((resolve) => setTimeout(resolve, 3000));
   await data.executeStatement({
     sql: 'UPDATE `order` SET `status` = :status WHERE id = :id',
     parameters: [

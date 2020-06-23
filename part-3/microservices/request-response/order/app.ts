@@ -102,6 +102,7 @@ async function reconcileRecords(id: string, paymentStatus: string, shippingStatu
   const results = await Promise.allSettled([payment, shipping]);
   log('results', results);
   // How to deal with error(s)?
+  await new Promise((resolve) => setTimeout(resolve, 3000));
   // Update order's status to "Processed" of "OnHold".
   await data.query('UPDATE `order` SET `status` = :status WHERE id = :id', { id, status });
 }

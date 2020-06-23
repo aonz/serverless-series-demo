@@ -64,20 +64,14 @@ exports.handler = async (event: any, context: any) => {
       const context = result.records[0];
       log('context', context);
       const { amount, quantity } = context;
-      log('Send Event(s)', ['CreatePayment', 'CreateShipping']);
+      log('Send Event(s)', ['OrderCreated']);
       const params = {
         Entries: [
           {
             EventBusName: process.env.EVENT_BUS_NAME,
             Source: 'OrderContext',
-            DetailType: 'CreatePayment',
-            Detail: JSON.stringify({ id, amount }),
-          },
-          {
-            EventBusName: process.env.EVENT_BUS_NAME,
-            Source: 'OrderContext',
-            DetailType: 'CreateShipping',
-            Detail: JSON.stringify({ id, quantity }),
+            DetailType: 'OrderCreated',
+            Detail: JSON.stringify({ id, amount, quantity }),
           },
         ],
       };

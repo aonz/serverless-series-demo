@@ -46,6 +46,13 @@ CREATE TABLE IF NOT EXISTS shipping.shipping (
 -- DROP TABLE `order`.context;
 -- DROP TABLE payment.payment;
 -- DROP TABLE shipping.shipping;
+-- DELETE FROM shop.`order`;
+-- DELETE FROM shop.payment;
+-- DELETE FROM shop.shipping;
+-- DELETE FROM `order`.`order`;
+-- DELETE FROM `order`.context;
+-- DELETE FROM payment.payment;
+-- DELETE FROM shipping.shipping;
 -- Monolith
 SELECT o.id AS OrderID,
   o.status AS OrderStatus,

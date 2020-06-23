@@ -324,6 +324,14 @@
     "@aws-cdk/core" "1.46.0"
     constructs "^3.0.2"
 
+"@aws-cdk/aws-eventschemas@^1.46.0":
+  version "1.46.0"
+  resolved "https://registry.yarnpkg.com/@aws-cdk/aws-eventschemas/-/aws-eventschemas-1.46.0.tgz#ae232bb644f549cc1d0222be3c2f7eff9f7ffe82"
+  integrity sha512-Ykvdx07mH7pFLVLZi+Nl6bPk1bXeMDUoO0bghD5khIgEOfakC9cVcI3v0DKDBqj5ZZxntrUriV6JU4Vgowp47Q==
+  dependencies:
+    "@aws-cdk/core" "1.46.0"
+    constructs "^3.0.2"
+
 "@aws-cdk/aws-glue@1.46.0":
   version "1.46.0"
   resolved "https://registry.yarnpkg.com/@aws-cdk/aws-glue/-/aws-glue-1.46.0.tgz#3ed0c587036be782dcd5be2675d923c88047e320"

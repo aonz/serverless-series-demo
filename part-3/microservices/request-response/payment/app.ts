@@ -46,6 +46,7 @@ router.post('/process-payment', async (req, res) => {
   log('/process-payment', req.body);
   const { id, amount } = req.body;
   try {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     const status = amount <= 1000 ? 'Processed' : 'Exceeded';
     await data.query('UPDATE payment SET `status` = :status WHERE id = :id', { id, status });
     if (status === 'Exceeded') {
@@ -64,6 +65,7 @@ router.post('/reconcile-payment', async (req, res) => {
   log('/reconcile-payment', req.body);
   const { id } = req.body;
   try {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     await data.query('UPDATE payment SET `status` = :status WHERE id = :id', {
       id,
       status: 'OnHold',
