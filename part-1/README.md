@@ -94,8 +94,6 @@ touch lib/runtime.js
 
 sam build && sam deploy
 
-# Change Lambda runtime on AWS console
-
 sam logs -n HelloWorldFunction --stack-name sam-app --tail
 curl ${BASE_URL}/hello
 
@@ -144,7 +142,6 @@ git commit -a -m 'Step 6 - Enabling Lambda gradual deployment.'
 
 # Pending features (As of 25 April 2020)
 
-- Support for Lambda Custom Runtime, https://github.com/awslabs/aws-sam-cli/pull/1279
 - Support for using `local start-api` with `HttpApi`, https://github.com/awslabs/aws-sam-cli/issues/1641
 
 # Resources

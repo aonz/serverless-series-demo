@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: sam-app
 
@@ -14,7 +14,7 @@ Resources:
     Properties:
       CodeUri: hello-world/
       Handler: app.lambdaHandler
-      Runtime: nodejs12.x
+      Runtime: provided
       Events:
         HelloWorld:
           Type: Api
@@ -27,7 +27,7 @@ Resources:
       Policies:
         - LambdaInvokePolicy:
             FunctionName: !Ref EchoFunction
-      Tracing: 'Active'
+      Tracing: "Active"
       Timeout: 10
       Layers:
         - !Ref LibLayer
@@ -36,8 +36,8 @@ Resources:
     Properties:
       CodeUri: echo/
       Handler: app.lambdaHandler
-      Runtime: nodejs12.x
-      Tracing: 'Active'
+      Runtime: provided
+      Tracing: "Active"
       Timeout: 10
       Layers:
         - !Ref LibLayer
@@ -65,5 +65,5 @@ Resources:
 
 Outputs:
   BaseUrl:
-    Description: 'API Gateway endpoint URL'
-    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod'
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
