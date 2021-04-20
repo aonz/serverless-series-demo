@@ -1,5 +1,6 @@
 import * as cdk from '@aws-cdk/core';
 import * as apigatewayv2 from '@aws-cdk/aws-apigatewayv2';
+import { LambdaProxyIntegration } from '@aws-cdk/aws-apigatewayv2-integrations';
 import * as dynamodb from '@aws-cdk/aws-dynamodb';
 import * as ec2 from '@aws-cdk/aws-ec2';
 import * as iam from '@aws-cdk/aws-iam';
@@ -97,7 +98,7 @@ export class ServerlessSeriesPart2Stack extends cdk.Stack {
     httpApi.addRoutes({
       path: '/{proxy+}',
       methods: [apigatewayv2.HttpMethod.ANY],
-      integration: new apigatewayv2.LambdaProxyIntegration({
+      integration: new LambdaProxyIntegration({
         handler: shopFn,
         payloadFormatVersion: apigatewayv2.PayloadFormatVersion.VERSION_1_0,
       }),

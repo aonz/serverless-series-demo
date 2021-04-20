@@ -1,6 +1,7 @@
 import * as cdk from '@aws-cdk/core';
 import * as apigateway from '@aws-cdk/aws-apigateway';
 import * as apigatewayv2 from '@aws-cdk/aws-apigatewayv2';
+import { LambdaProxyIntegration } from '@aws-cdk/aws-apigatewayv2-integrations';
 import * as ec2 from '@aws-cdk/aws-ec2';
 import * as events from '@aws-cdk/aws-events';
 import * as eventsTargets from '@aws-cdk/aws-events-targets';
@@ -121,7 +122,7 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
     httpApi.addRoutes({
       path: '/monolith/{proxy+}',
       methods: [apigatewayv2.HttpMethod.ANY],
-      integration: new apigatewayv2.LambdaProxyIntegration({
+      integration: new LambdaProxyIntegration({
         handler: monolithFn,
         payloadFormatVersion: apigatewayv2.PayloadFormatVersion.VERSION_1_0,
       }),
@@ -162,7 +163,7 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
     httpApi.addRoutes({
       path: '/microservices/request-response/order/{proxy+}',
       methods: [apigatewayv2.HttpMethod.ANY],
-      integration: new apigatewayv2.LambdaProxyIntegration({
+      integration: new LambdaProxyIntegration({
         handler: rrOrderFn,
         payloadFormatVersion: apigatewayv2.PayloadFormatVersion.VERSION_1_0,
       }),
@@ -819,7 +820,7 @@ export class ServerlessSeriesPart3Stack extends cdk.Stack {
     httpApi.addRoutes({
       path: '/microservices/choreography/order/create-order',
       methods: [apigatewayv2.HttpMethod.POST],
-      integration: new apigatewayv2.LambdaProxyIntegration({
+      integration: new LambdaProxyIntegration({
         handler: crOrderContextFn,
         payloadFormatVersion: apigatewayv2.PayloadFormatVersion.VERSION_2_0,
       }),

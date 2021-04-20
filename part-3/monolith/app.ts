@@ -50,7 +50,7 @@ async function createPendingRecords(id: string, amount: number, quantity: number
 }
 
 function processPayment(id: string, amount: number, transactionId: string) {
-  return new Promise(async (resolve, reject) => {
+  return new Promise<void>(async (resolve, reject) => {
     console.log('Start - Process payment');
     await new Promise((resolve) => setTimeout(resolve, 3000));
     const status = amount <= 1000 ? 'Processed' : 'Exceeded';
@@ -73,7 +73,7 @@ function processPayment(id: string, amount: number, transactionId: string) {
 }
 
 function processShipping(id: string, quantity: number, transactionId: string) {
-  return new Promise(async (resolve, reject) => {
+  return new Promise<void>(async (resolve, reject) => {
     console.log('Start - Make shipping');
     await new Promise((resolve) => setTimeout(resolve, 3000));
     const status = quantity <= 100 ? 'Processed' : 'Exceeded';

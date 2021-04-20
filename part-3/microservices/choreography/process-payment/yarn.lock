@@ -2,14 +2,14 @@
 # yarn lockfile v1
 
 
-data-api-client@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/data-api-client/-/data-api-client-1.0.1.tgz#816798fb2f25dabf80e54dceb5e0d3ec1ed4dd6c"
-  integrity sha512-5aJ3uu2NH1S2mKyHhAqhkMMt7vgyKlLCdT/aq8X3disylSfGxSDj7NUl4zZzL5Jalbnoz40inZbB2i0EXTJbzg==
+data-api-client@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/data-api-client/-/data-api-client-1.2.0.tgz#3c07bc751f59c7e1ea97a18814b18dd762213fb8"
+  integrity sha512-AGv4lWOF4RyoqUOLrYWbZeIP7eyFCM2UxGJ92XG9Q0xHofrT/67plprl0mAsxpAYdWQ8u0hLZFxC+iQSASsjgQ==
   dependencies:
-    sqlstring "^2.3.1"
+    sqlstring "^2.3.2"
 
-sqlstring@^2.3.1:
+sqlstring@^2.3.2:
   version "2.3.2"
   resolved "https://registry.yarnpkg.com/sqlstring/-/sqlstring-2.3.2.tgz#cdae7169389a1375b18e885f2e60b3e460809514"
   integrity sha512-vF4ZbYdKS8OnoJAWBmMxCQDkiEBkGQYU7UZPtL8flbDRSNkhaXvRJ279ZtI6M+zDaQovVU4tuRgzK5fVhvFAhg==

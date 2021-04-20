@@ -80,8 +80,8 @@ async function processPendingRecords(id: string, amount: number, quantity: numbe
 
 async function reconcileRecords(id: string, paymentStatus: string, shippingStatus: string) {
   let status = 'Processed';
-  let payment = new Promise((resolve) => resolve());
-  let shipping = new Promise((resolve) => resolve());
+  let payment: any = new Promise<void>((resolve) => resolve());
+  let shipping: any = new Promise<void>((resolve) => resolve());
   if (paymentStatus === 'rejected' || shippingStatus === 'rejected') {
     status = 'OnHold';
     if (paymentStatus === 'rejected' && shippingStatus === 'fulfilled') {

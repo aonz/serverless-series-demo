@@ -4,10 +4,10 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "data-api-client": "^1.0.1",
-    "uuid": "^8.1.0"
+    "data-api-client": "^1.2.0",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
-    "@types/uuid": "^8.0.0"
+    "@types/uuid": "^8.3.0"
   }
 }
