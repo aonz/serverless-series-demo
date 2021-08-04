@@ -8,7 +8,7 @@
   "license": "MIT",
   "dependencies": {
     "aws-sdk": "^2.889.0",
-    "aws-xray-sdk-core": "^3.3.1",
+    "aws-xray-sdk-core": "^3.3.3",
     "axios": "^0.21.1"
   },
   "scripts": {
